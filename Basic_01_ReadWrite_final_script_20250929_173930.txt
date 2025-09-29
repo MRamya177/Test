@@ -1,0 +1,106 @@
+# Content Generated on 29-09-2025 17:39 India Standard Time using Provider - AzureOpenAI, Model gpt-4
+
+# -------- READING PARAMS BEGIN ----------
+import argparse
+import json
+import psycopg2
+import os
+
+def parse_json_file(filename):
+    with open(filename, 'r') as f:
+        return json.load(f)
+
+def parse_key_value_file(filename):
+    config_dict = {}
+    with open(filename, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                key_value = line.split("=")
+                if len(key_value) == 2:
+                    key = key_value[0].strip()
+                    value = key_value[1].strip()
+                    config_dict[key] = value
+    return config_dict
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--json_config', required=True, help="Path to JSON config file")
+parser.add_argument('--params', required=False, help="Path to key-value params file")
+args = parser.parse_args()
+
+json_config = parse_json_file(args.json_config)
+params = parse_key_value_file(args.params) if args.params else {{}}
+
+for key, value in json_config.items():
+        globals()[key] = value
+
+for key, value in params.items():
+        globals()[key] = value
+
+# -------- READING PARAMS END ------------
+
+
+
+
+import logging
+import time
+from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv('.env')
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+if not os.path.exists(os.getenv('RUNTIME_LOGS')):
+    os.makedirs(os.getenv('RUNTIME_LOGS'))
+log_file = os.path.join(os.getenv('RUNTIME_LOGS'),"Basic_01_ReadWrite_" + time.strftime("%d%m%Y_%H%M%S") + ".log")
+file_handler = logging.FileHandler(log_file)
+logger.addHandler(file_handler)
+
+# Start time
+start_time = time.time()
+logger.info("Job started at " + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)))
+
+try:
+
+	from pyspark.sql import SparkSession 
+	spark = SparkSession.builder.appName("App").getOrCreate() 
+	
+	
+	### Source Variables ### 
+	source_db1 = params["source_db1"]
+	source_db_type1 = 'Oracle'
+	jdbc_url = json_config[source_db_type1][source_db1][0]["jdbc_url"]
+	connection_properties = json_config[source_db_type1][source_db1][0]["connection_properties"]
+	df_Oracle_Connector_ORCL_Read_Lnk_ORCL_Src_XFM_XFM_Map = spark.read.format("jdbc").option("url", jdbc_url).option("user", connection_properties["username"]).option("password", connection_properties["password"]).option("query", f"""Select id,sal from employee""").load()
+	
+	df_Oracle_Connector_ORCL_Read_Lnk_ORCL_Src_XFM_XFM_Map.createOrReplaceTempView("df_Oracle_Connector_ORCL_Read_Lnk_ORCL_Src_XFM_XFM_Map ")
+	### STAGE: XFM_Map  ###
+	### Current df: df_XFM_Map_Lnk_XFM_Seq_Sequential_File_Output
+	#PROMPT BEGIN 
+	
+	df_XFM_Map_Lnk_XFM_Seq_Sequential_File_Output = spark.sql(f"""
+	SELECT 
+	    Lnk_ORCL_Src_XFM.sal AS sal,
+	    Lnk_ORCL_Src_XFM.id AS id
+	FROM 
+	    df_Oracle_Connector_ORCL_Read_Lnk_ORCL_Src_XFM_XFM_Map AS Lnk_ORCL_Src_XFM
+	""")
+	df_XFM_Map_Lnk_XFM_Seq_Sequential_File_Output.createOrReplaceTempView("df_XFM_Map_Lnk_XFM_Seq_Sequential_File_Output")
+	processed_records_count = df_XFM_Map_Lnk_XFM_Seq_Sequential_File_Output.count()
+	logger.info(f"Number of records processed for XFM_Map: {processed_records_count}")
+	
+	#PROMPT END
+	df_XFM_Map_Lnk_XFM_Seq_Sequential_File_Output.repartition(1).write.mode(f"{mode}").csv(f"C:\test2.txt", header=True)
+	
+	# End time
+	end_time = time.time()
+	elapsed_time = end_time - start_time
+	logger.info(f"Job finished at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time))}")
+	logger.info(f"Elapsed time: {elapsed_time:.2f} seconds")
+	spark.stop()
+
+except Exception as e:
+	logger.error(f"Job failed with error: {str(e)}")
+	raise
+    
