@@ -1,0 +1,278 @@
+# Content Generated on 31-10-2025 14:46 India Standard Time using Provider - AzureOpenAI, Model gpt-4
+
+# This is the source column mapping generated for m_ODS_PRODUCT - Informatica to PySpark
+
+import argparse
+import json
+import psycopg2
+import os
+from sqlalchemy import create_engine, text
+### Load the Params, DB config details and Arguments required for the Pyspark job ###
+# Parse and load the json file for db connections using jdbc 
+def parse_json_file(filename):
+    with open(filename, 'r') as f:
+        return json.load(f)
+
+# Parse and load the params file to read parameters in the pyspark script #
+def parse_key_value_file(filename):
+    config_dict = {}
+    with open(filename, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                key_value = line.split("=")
+                if len(key_value) == 2:
+                    key = key_value[0].strip()
+                    value = key_value[1].strip()
+                    config_dict[key] = value
+    return config_dict
+
+# Defining the arguments which are required during Spark submit command #
+parser = argparse.ArgumentParser()
+parser.add_argument('--json_config', required=True, help="Path to JSON config file")
+parser.add_argument('--params', required=False, help="Path to key-value params file")
+args = parser.parse_args()
+# Assigning the dictionaries to the variables #
+json_config = parse_json_file(args.json_config)
+params = parse_key_value_file(args.params) if args.params else {}
+
+for key, value in json_config.items():
+        globals()[key] = value
+
+for key, value in params.items():
+        globals()[key] = value
+
+
+# -------- READING PARAMS END ------------
+
+
+import logging
+import time
+from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv('.env')
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+if not os.path.exists(os.getenv('RUNTIME_LOGS')):
+    os.makedirs(os.getenv('RUNTIME_LOGS'))
+log_file = os.path.join(os.getenv('RUNTIME_LOGS'),"m_ODS_PRODUCT_" + time.strftime("%d%m%Y_%H%M%S") + ".log")
+file_handler = logging.FileHandler(log_file)
+logger.addHandler(file_handler)
+
+# Start time
+start_time = time.time()
+logger.info("Job started at " + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)))
+
+try:
+
+	from pyspark.sql import SparkSession
+	from pyspark.sql.functions import lag, col, explode, row_number, lit
+	from pyspark.sql.window import Window
+	import pyspark.sql.functions as F
+	spark = SparkSession.builder.appName("m_ODS_PRODUCT").getOrCreate()
+	
+	spark.conf.set("spark.sql.caseSensitive", "true")
+	
+	
+	### Source Variables ### 
+	source_db1 = 'sdbu'
+	source_db_type1 = 'Oracle'
+	
+	### Target Variables ### 
+	target_db1 = params["target_db1"]
+	target_db_type1 = 'Oracle'
+	
+	# Db connections using jdbc for lookup tables #
+	jdbc_url = json_config[target_db_type1][target_db1][0]["jdbc_url"]
+	connection_properties = json_config[target_db_type1][target_db1][0]["connection_properties"]
+	
+	
+	df_lkp_ODS_PRODUCT_lkp = spark.read.jdbc(url=jdbc_url, table="ODS_PRODUCT", properties=connection_properties)
+	df_lkp_ODS_PRODUCT_lkp.createOrReplaceTempView("df_lkp_ODS_PRODUCT_lkp")
+	
+	df_lkp_ODS_PRODUCT_lookup = spark.sql(f"""SELECT PRODUCT_CODE FROM df_lkp_ODS_PRODUCT_lkp""")
+	
+	df_lkp_ODS_PRODUCT_lookup.createOrReplaceTempView("df_lkp_ODS_PRODUCT_lookup")
+	
+	### SOURCE: PRODUCT ### 
+	jdbc_url = json_config[source_db_type1][source_db1][0]["jdbc_url"]
+	connection_properties = json_config[source_db_type1][source_db1][0]["connection_properties"]
+	df_PRODUCT_sq_PRODUCT_VENDOR = spark.read.jdbc(url=jdbc_url, table="PRODUCT", properties=connection_properties)
+	
+	df_PRODUCT_sq_PRODUCT_VENDOR.createOrReplaceTempView("df_PRODUCT_sq_PRODUCT_VENDOR")
+	
+	
+	### SOURCE: VENDOR ### 
+	jdbc_url = json_config[source_db_type1][source_db1][0]["jdbc_url"]
+	connection_properties = json_config[source_db_type1][source_db1][0]["connection_properties"]
+	df_VENDOR_sq_PRODUCT_VENDOR = spark.read.jdbc(url=jdbc_url, table="VENDOR", properties=connection_properties)
+	 
+	### Any column renames occuring in the flow of Source and Source Qualifier needs to be handled manually.
+	df_VENDOR_sq_PRODUCT_VENDOR = df_VENDOR_sq_PRODUCT_VENDOR
+		.withColumnRenamed("VENDOR_ID", "VENDOR_ID1")
+	df_VENDOR_sq_PRODUCT_VENDOR.createOrReplaceTempView("df_VENDOR_sq_PRODUCT_VENDOR")
+	
+	
+	transformation_start_time = time.time()
+	
+	### TRANSFORMATION: sq_PRODUCT_VENDOR ###
+	#PROMPT BEGIN
+	df_sq_PRODUCT_VENDOR = spark.read.format("jdbc") \
+	    .option("url", f"{jdbc_url}") \
+	    .option("driver", f"{connection_properties['driver']}") \
+	    .option("user", f"{connection_properties['user']}") \
+	    .option("password", f"{connection_properties['password']}") \
+	    .option("query", f"""
+	        SELECT 
+	            PRODUCT.PRODUCT_CODE AS PRODUCT_CODE,
+	            PRODUCT.VENDOR_ID AS VENDOR_ID,
+	            PRODUCT.CATEGORY AS CATEGORY,
+	            PRODUCT.PRODUCT_NAME AS PRODUCT_NAME,
+	            PRODUCT.MODEL AS MODEL,
+	            PRODUCT.PRICE AS PRICE,
+	            PRODUCT.COST AS COST,
+	            PRODUCT.DISCONTINUED_FLAG AS DISCONTINUED_FLAG,
+	            VENDOR.VENDOR_ID AS VENDOR_ID1,
+	            VENDOR.VENDOR_NAME AS VENDOR_NAME,
+	            VENDOR.FIRST_CONTACT AS FIRST_CONTACT,
+	            VENDOR.VENDOR_STATE AS VENDOR_STATE
+	        FROM 
+	            PRODUCT
+	        INNER JOIN 
+	            VENDOR
+	        ON 
+	            VENDOR.VENDOR_ID = PRODUCT.VENDOR_ID
+	    """) \
+	    .load()
+	
+	#PROMPT END
+	
+	
+	read_records_count = df_sq_PRODUCT_VENDOR.count()
+	
+	logger.info(f"Number of records read for sq_PRODUCT_VENDOR: {read_records_count}")
+	
+	
+	df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT = df_sq_PRODUCT_VENDOR\
+		.withColumn("PRODUCT_CODE_src", df_sq_PRODUCT_VENDOR["PRODUCT_CODE"])\
+		.drop("PRODUCT_CODE")
+	df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT.createOrReplaceTempView("df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT")
+	
+	### TRANSFORMATION: lkp_ODS_PRODUCT ###
+	#PROMPT BEGIN
+	df_lkp_ODS_PRODUCT_upd_ODS_PRODUCT = spark.sql(f"""
+	    SELECT 
+	        a.*, 
+	        b.PRODUCT_CODE AS PRODUCT_CODE_lkp
+	    FROM 
+	        df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT a
+	    LEFT JOIN 
+	        df_lkp_ODS_PRODUCT_lookup b
+	    ON 
+	        a.PRODUCT_CODE_src = b.PRODUCT_CODE
+	""")
+	
+	#PROMPT END
+	
+	
+	df_lkp_ODS_PRODUCT_upd_ODS_PRODUCT = df_lkp_ODS_PRODUCT_upd_ODS_PRODUCT
+	
+	
+	df_lkp_ODS_PRODUCT_upd_ODS_PRODUCT.createOrReplaceTempView("df_lkp_ODS_PRODUCT_upd_ODS_PRODUCT")
+	
+	### TRANSFORMATION: upd_ODS_PRODUCT ###
+	#PROMPT BEGIN
+	df_upd_ODS_PRODUCT_ODS_PRODUCT = spark.sql(f"SELECT PRODUCT_CODE_lkp, PRODUCT_CODE_src, VENDOR_ID, CATEGORY, PRODUCT_NAME, MODEL, PRICE, COST, DISCONTINUED_FLAG, VENDOR_ID1, VENDOR_NAME, FIRST_CONTACT, VENDOR_STATE FROM df_lkp_ODS_PRODUCT_upd_ODS_PRODUCT")
+	
+	#PROMPT END
+	
+	
+	df_upd_ODS_PRODUCT_ODS_PRODUCT = df_upd_ODS_PRODUCT_ODS_PRODUCT
+	
+		.drop(["PRODUCT_CODE_lkp", "COST", "DISCONTINUED_FLAG", "VENDOR_ID1"])
+	df_upd_ODS_PRODUCT_ODS_PRODUCT.createOrReplaceTempView("df_upd_ODS_PRODUCT_ODS_PRODUCT")
+	
+	
+	
+	### Perform DML operations like UPDATE and DELETE on the DB and log the count of records in runtime logs ###
+	
+	def perform_update_delete(dml_data, sql_template, required_columns, connection_string):
+	    dml_data_list = list(dml_data)
+	    if not dml_data_list:
+	        return []
+	    batch_data = list(map(lambda row: dict(zip(required_columns, row)), dml_data_list))
+	    counters = {'updated': 0, 'deleted': 0}
+	    try:
+	        engine = create_engine(connection_string)
+	        with engine.connect() as connection:
+	            for data in batch_data:
+	                result = connection.execute(text(sql_template), data) # Execution of DML command
+	                if 'UPDATE' in sql_template:
+	                    counters['updated'] += result.rowcount
+	
+	                elif 'DELETE' in sql_template:
+	                    counters['deleted'] += result.rowcount
+	            connection.commit()
+	
+	        for key in ['updated', 'deleted']:
+	            if counters[key]:
+	                return [counters[key]]
+	    except Exception as e:
+	        logger.error(f"Error processing partition: {e}", exc_info=True)
+	        raise
+	    return []
+	
+	# Connection string to connect to the Target DB using jdbc
+	connection_string =json_config[target_db1]
+	
+	#Query preparation for the update query on database
+	sql_template = f"""
+	    UPDATE ODS_PRODUCT
+	    SET VENDOR_NAME = :VENDOR_NAME, VENDOR_STATE = :VENDOR_STATE, PRODUCT_NAME = :PRODUCT_NAME, CATEGORY = :CATEGORY, MODEL = :MODEL, PRICE = :PRICE, FIRST_CONTACT = :FIRST_CONTACT
+	    WHERE ODS_PRODUCT.PRODUCT_CODE = :PRODUCT_CODE AND ODS_PRODUCT.VENDOR_ID = :VENDOR_ID AND :Update_Strategy_Expression = 'DD_UPDATE';
+	    """
+	required_columns = ['VENDOR_NAME', 'VENDOR_STATE', 'PRODUCT_NAME', 'CATEGORY', 'MODEL', 'PRICE', 'FIRST_CONTACT', 'PRODUCT_CODE', 'VENDOR_ID', 'Update_Strategy_Expression'] 
+	filtered_df = df_upd_ODS_PRODUCT_ODS_PRODUCT.select(*required_columns)
+	updated_records_count = filtered_df.rdd.mapPartitions(lambda dml_data: perform_update_delete(dml_data, sql_template, required_columns, connection_string)).sum()
+	logger.info(f"Number of records updated in table ODS_PRODUCT: {updated_records_count}")
+	
+	
+	# Connection string to connect to the Target DB using jdbc
+	connection_string =json_config[target_db1]
+	
+	# Query preparation for the delete query on database
+	sql_template = f"""
+	    DELETE FROM ODS_PRODUCT
+	    WHERE ODS_PRODUCT.PRODUCT_CODE = :PRODUCT_CODE AND ODS_PRODUCT.VENDOR_ID = :VENDOR_ID AND :Update_Strategy_Expression = 'DD_DELETE';
+	    """
+	required_columns = ['PRODUCT_CODE', 'VENDOR_ID', 'Update_Strategy_Expression']
+	filtered_df = df_upd_ODS_PRODUCT_ODS_PRODUCT.select(*required_columns)
+	deleted_records_count = filtered_df.rdd.mapPartitions(lambda dml_data: perform_update_delete(dml_data, sql_template, required_columns, connection_string)).sum()
+	logger.info(f"Number of records deleted in table ODS_PRODUCT: {deleted_records_count}")
+	
+	
+	# Inserting data to table using spark write #
+	df_upd_ODS_PRODUCT_ODS_PRODUCT_tgt = df_upd_ODS_PRODUCT_ODS_PRODUCT.filter(df_upd_ODS_PRODUCT_ODS_PRODUCT.Update_Strategy_Expression == 'DD_INSERT')
+	df_upd_ODS_PRODUCT_ODS_PRODUCT_tgt = df_upd_ODS_PRODUCT_ODS_PRODUCT_tgt.select(['PRODUCT_CODE', 'VENDOR_ID', 'VENDOR_NAME', 'VENDOR_STATE', 'PRODUCT_NAME', 'CATEGORY', 'MODEL', 'PRICE', 'FIRST_CONTACT'])
+	inserted_records_count = df_upd_ODS_PRODUCT_ODS_PRODUCT_tgt.count()
+	logger.info(f"Number of records inserted in table ODS_PRODUCT: {inserted_records_count}")
+	jdbc_url =  json_config[target_db_type1][target_db1][0]["jdbc_url"]
+	connection_properties =  json_config[target_db_type1][target_db1][0]["connection_properties"]
+	df_upd_ODS_PRODUCT_ODS_PRODUCT_tgt.write.jdbc(url=jdbc_url, table="ODS_PRODUCT", mode = "append", properties=connection_properties)
+	
+	
+	
+	
+	# End time
+	end_time = time.time()
+	elapsed_time = end_time - start_time
+	logger.info(f"Job finished at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time))}")
+	logger.info(f"Elapsed time: {elapsed_time:.2f} seconds")
+	spark.stop()
+
+except Exception as e:
+	logger.error(f"Job failed with error: {str(e)}")
+	raise
+    
