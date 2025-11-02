@@ -1,4 +1,4 @@
-# Content Generated on 31-10-2025 16:58 India Standard Time using Provider - AzureOpenAI, Model gpt-4
+# Content Generated on 02-11-2025 14:36 India Standard Time using Provider - AzureOpenAI, Model gpt-4
 
 # This is the source column mapping generated for m_ODS_PRODUCT - Informatica to PySpark
 
@@ -140,11 +140,12 @@ try:
 	            VENDOR.VENDOR_STATE AS VENDOR_STATE
 	        FROM 
 	            PRODUCT
-	        JOIN 
+	        INNER JOIN 
 	            VENDOR
 	        ON 
 	            VENDOR.VENDOR_ID = PRODUCT.VENDOR_ID
-	    """).load()
+	    """) \
+	    .load()
 	
 	#PROMPT END
 	
@@ -162,15 +163,15 @@ try:
 	### TRANSFORMATION: lkp_ODS_PRODUCT ###
 	#PROMPT BEGIN
 	df_lkp_ODS_PRODUCT_upd_ODS_PRODUCT = spark.sql(f"""
-	SELECT 
-	    src.*,
-	    lkp.PRODUCT_CODE AS PRODUCT_CODE_lkp
-	FROM 
-	    df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT src
-	LEFT JOIN 
-	    df_lkp_ODS_PRODUCT_lookup lkp
-	ON 
-	    src.PRODUCT_CODE_src = lkp.PRODUCT_CODE
+	    SELECT 
+	        src.*,
+	        lkp.PRODUCT_CODE AS PRODUCT_CODE_lkp
+	    FROM 
+	        df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT src
+	    LEFT JOIN 
+	        df_lkp_ODS_PRODUCT_lookup lkp
+	    ON 
+	        src.PRODUCT_CODE_src = lkp.PRODUCT_CODE
 	""")
 	
 	#PROMPT END
