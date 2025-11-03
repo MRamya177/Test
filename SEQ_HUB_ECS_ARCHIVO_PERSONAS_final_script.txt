@@ -1,0 +1,124 @@
+# Content Generated on 03-11-2025 12:12 India Standard Time using Provider - AzureOpenAI, Model gpt-4
+
+# -------- READING PARAMS BEGIN ----------
+import argparse
+import json
+import psycopg2
+import os
+
+def parse_json_file(filename):
+    with open(filename, 'r') as f:
+        return json.load(f)
+
+def parse_key_value_file(filename):
+    config_dict = {}
+    with open(filename, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                key_value = line.split("=")
+                if len(key_value) == 2:
+                    key = key_value[0].strip()
+                    value = key_value[1].strip()
+                    config_dict[key] = value
+    return config_dict
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--json_config', required=True, help="Path to JSON config file")
+parser.add_argument('--params', required=False, help="Path to key-value params file")
+args = parser.parse_args()
+
+json_config = parse_json_file(args.json_config)
+params = parse_key_value_file(args.params) if args.params else {{}}
+
+for key, value in json_config.items():
+        globals()[key] = value
+
+for key, value in params.items():
+        globals()[key] = value
+
+# -------- READING PARAMS END ------------
+
+
+
+
+import logging
+import time
+from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv('.env')
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+if not os.path.exists(os.getenv('RUNTIME_LOGS')):
+    os.makedirs(os.getenv('RUNTIME_LOGS'))
+log_file = os.path.join(os.getenv('RUNTIME_LOGS'),"SEQ_HUB_ECS_ARCHIVO_PERSONAS_" + time.strftime("%d%m%Y_%H%M%S") + ".log")
+file_handler = logging.FileHandler(log_file)
+logger.addHandler(file_handler)
+
+# Start time
+start_time = time.time()
+logger.info("Job started at " + time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time)))
+
+try:
+
+	from pyspark.sql import SparkSession 
+	spark = SparkSession.builder.appName("App").getOrCreate() 
+	
+	### STAGE: ML_ENVIA_MAIL_ERROR  ###
+	### Current df: df_ML_ENVIA_MAIL_ERROR_LNK_A_ABORTA_SECUENCIA_ABORTA_SECUENCIA
+	#PROMPT BEGIN 
+	
+	df_ML_ENVIA_MAIL_ERROR_LNK_A_ABORTA_SECUENCIA_ABORTA_SECUENCIA = spark.sql(f"""
+	    SELECT * 
+	    FROM df_EH_DETECTA_ERROR_LNK_A_ML_ENVIA_MAIL_ERROR_ML_ENVIA_MAIL_ERROR
+	    WHERE 1=1
+	""")
+	df_ML_ENVIA_MAIL_ERROR_LNK_A_ABORTA_SECUENCIA_ABORTA_SECUENCIA.createOrReplaceTempView("df_ML_ENVIA_MAIL_ERROR_LNK_A_ABORTA_SECUENCIA_ABORTA_SECUENCIA")
+	processed_records_count = df_ML_ENVIA_MAIL_ERROR_LNK_A_ABORTA_SECUENCIA_ABORTA_SECUENCIA.count()
+	logger.info(f"Number of records processed for ML_ENVIA_MAIL_ERROR: {processed_records_count}")
+	
+	#PROMPT END
+	### STAGE: JOB_LI_EXT_ARCHIVO_PERSONAS_CRM  ###
+	### Current df: df_JOB_LI_EXT_ARCHIVO_PERSONAS_CRM_LNK_A_JOB_LI_CLE_ARCHIVO_PERSONAS_JOB_LI_CLE_ARCHIVO_PERSONAS
+	#PROMPT BEGIN 
+	
+	# Spark SQL query for the output link "LNK_A_JOB_LI_CLE_ARCHIVO_PERSONAS" with the condition defined in the XML
+	df_JOB_LI_EXT_ARCHIVO_PERSONAS_CRM_LNK_A_JOB_LI_CLE_ARCHIVO_PERSONAS_JOB_LI_CLE_ARCHIVO_PERSONAS = spark.sql(f"""
+	    SELECT *
+	    FROM df_JOB_LI_EXT_ARCHIVO_PERSONAS_FIN_LNK_A_JOB_LI_EXT_ARCHIVO_PERSONAS_CRM_JOB_LI_EXT_ARCHIVO_PERSONAS_CRM
+	    WHERE JOB_LI_EXT_ARCHIVO_PERSONAS_CRM.$JobStatus = 1 OR JOB_LI_EXT_ARCHIVO_PERSONAS_CRM.$JobStatus = 2
+	""")
+	df_JOB_LI_EXT_ARCHIVO_PERSONAS_CRM_LNK_A_JOB_LI_CLE_ARCHIVO_PERSONAS_JOB_LI_CLE_ARCHIVO_PERSONAS.createOrReplaceTempView("df_JOB_LI_EXT_ARCHIVO_PERSONAS_CRM_LNK_A_JOB_LI_CLE_ARCHIVO_PERSONAS_JOB_LI_CLE_ARCHIVO_PERSONAS")
+	processed_records_count = df_JOB_LI_EXT_ARCHIVO_PERSONAS_CRM_LNK_A_JOB_LI_CLE_ARCHIVO_PERSONAS_JOB_LI_CLE_ARCHIVO_PERSONAS.count()
+	logger.info(f"Number of records processed for JOB_LI_EXT_ARCHIVO_PERSONAS_CRM: {processed_records_count}")
+	
+	#PROMPT END
+	### STAGE: JOB_LI_CLE_ARCHIVO_PERSONAS  ###
+	### Current df: df_JOB_LI_CLE_ARCHIVO_PERSONAS_LNK_A_SEQ_HUB_ECS_PMO12242PERSONAS_SEQ_HUB_ECS_PMO12242PERSONAS
+	#PROMPT BEGIN 
+	
+	# Spark SQL query for the output link "LNK_A_SEQ_HUB_ECS_PMO12242PERSONAS" with the condition defined in the XML
+	df_JOB_LI_CLE_ARCHIVO_PERSONAS_LNK_A_SEQ_HUB_ECS_PMO12242PERSONAS_SEQ_HUB_ECS_PMO12242PERSONAS = spark.sql(f"""
+	    SELECT *
+	    FROM df_JOB_LI_EXT_ARCHIVO_PERSONAS_CRM_LNK_A_JOB_LI_CLE_ARCHIVO_PERSONAS_JOB_LI_CLE_ARCHIVO_PERSONAS
+	    WHERE JOB_LI_CLE_ARCHIVO_PERSONAS.$JobStatus = 1 OR JOB_LI_CLE_ARCHIVO_PERSONAS.$JobStatus = 2
+	""")
+	df_JOB_LI_CLE_ARCHIVO_PERSONAS_LNK_A_SEQ_HUB_ECS_PMO12242PERSONAS_SEQ_HUB_ECS_PMO12242PERSONAS.createOrReplaceTempView("df_JOB_LI_CLE_ARCHIVO_PERSONAS_LNK_A_SEQ_HUB_ECS_PMO12242PERSONAS_SEQ_HUB_ECS_PMO12242PERSONAS")
+	processed_records_count = df_JOB_LI_CLE_ARCHIVO_PERSONAS_LNK_A_SEQ_HUB_ECS_PMO12242PERSONAS_SEQ_HUB_ECS_PMO12242PERSONAS.count()
+	logger.info(f"Number of records processed for JOB_LI_CLE_ARCHIVO_PERSONAS: {processed_records_count}")
+	
+	#PROMPT END
+	
+	# End time
+	end_time = time.time()
+	elapsed_time = end_time - start_time
+	logger.info(f"Job finished at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time))}")
+	logger.info(f"Elapsed time: {elapsed_time:.2f} seconds")
+	spark.stop()
+
+except Exception as e:
+	logger.error(f"Job failed with error: {str(e)}")
+	raise
+    
