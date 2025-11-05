@@ -1,4 +1,4 @@
-# Content Generated on 03-11-2025 11:48 India Standard Time using Provider - AzureOpenAI, Model gpt-4
+# Content Generated on 05-11-2025 12:46 India Standard Time using Provider - AzureOpenAI, Model gpt-4
 
 # This is the source column mapping generated for m_ODS_PRODUCT - Informatica to PySpark
 
@@ -126,22 +126,22 @@ try:
 	    .option("password", f"{connection_properties['password']}") \
 	    .option("query", f"""
 	        SELECT 
-	            PRODUCT.PRODUCT_CODE AS PRODUCT_CODE, 
-	            PRODUCT.VENDOR_ID AS VENDOR_ID, 
-	            PRODUCT.CATEGORY AS CATEGORY, 
-	            PRODUCT.PRODUCT_NAME AS PRODUCT_NAME, 
-	            PRODUCT.MODEL AS MODEL, 
-	            PRODUCT.PRICE AS PRICE, 
-	            PRODUCT.COST AS COST, 
-	            PRODUCT.DISCONTINUED_FLAG AS DISCONTINUED_FLAG, 
-	            VENDOR.VENDOR_ID AS VENDOR_ID1, 
-	            VENDOR.VENDOR_NAME AS VENDOR_NAME, 
-	            VENDOR.FIRST_CONTACT AS FIRST_CONTACT, 
+	            PRODUCT.PRODUCT_CODE AS PRODUCT_CODE,
+	            PRODUCT.VENDOR_ID AS VENDOR_ID,
+	            PRODUCT.CATEGORY AS CATEGORY,
+	            PRODUCT.PRODUCT_NAME AS PRODUCT_NAME,
+	            PRODUCT.MODEL AS MODEL,
+	            PRODUCT.PRICE AS PRICE,
+	            PRODUCT.COST AS COST,
+	            PRODUCT.DISCONTINUED_FLAG AS DISCONTINUED_FLAG,
+	            VENDOR.VENDOR_ID AS VENDOR_ID1,
+	            VENDOR.VENDOR_NAME AS VENDOR_NAME,
+	            VENDOR.FIRST_CONTACT AS FIRST_CONTACT,
 	            VENDOR.VENDOR_STATE AS VENDOR_STATE
 	        FROM 
-	            PRODUCT 
+	            PRODUCT
 	        INNER JOIN 
-	            VENDOR 
+	            VENDOR
 	        ON 
 	            VENDOR.VENDOR_ID = PRODUCT.VENDOR_ID
 	    """) \
@@ -163,15 +163,15 @@ try:
 	### TRANSFORMATION: lkp_ODS_PRODUCT ###
 	#PROMPT BEGIN
 	df_lkp_ODS_PRODUCT_upd_ODS_PRODUCT = spark.sql(f"""
-	SELECT 
-	    src.*,
-	    lkp.PRODUCT_CODE AS PRODUCT_CODE_lkp
-	FROM 
-	    df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT src
-	LEFT JOIN 
-	    df_lkp_ODS_PRODUCT_lookup lkp
-	ON 
-	    src.PRODUCT_CODE_src = lkp.PRODUCT_CODE
+	    SELECT 
+	        src.*,
+	        lkp.PRODUCT_CODE AS PRODUCT_CODE_lkp
+	    FROM 
+	        df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT src
+	    LEFT JOIN 
+	        df_lkp_ODS_PRODUCT_lookup lkp
+	    ON 
+	        src.PRODUCT_CODE_src = lkp.PRODUCT_CODE
 	""")
 	
 	#PROMPT END
