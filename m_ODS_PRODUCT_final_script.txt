@@ -1,4 +1,4 @@
-# Content Generated on 05-11-2025 14:45 India Standard Time using Provider - AzureOpenAI, Model gpt-4
+# Content Generated on 05-11-2025 14:46 India Standard Time using Provider - AzureOpenAI, Model gpt-4
 
 # This is the source column mapping generated for m_ODS_PRODUCT - Informatica to PySpark
 
@@ -164,14 +164,14 @@ try:
 	#PROMPT BEGIN
 	df_lkp_ODS_PRODUCT_upd_ODS_PRODUCT = spark.sql(f"""
 	    SELECT 
-	        df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT.*,
-	        df_lkp_ODS_PRODUCT_lookup.PRODUCT_CODE AS PRODUCT_CODE_lkp
+	        a.*,
+	        b.PRODUCT_CODE AS PRODUCT_CODE_lkp
 	    FROM 
-	        df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT
+	        df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT a
 	    LEFT JOIN 
-	        df_lkp_ODS_PRODUCT_lookup
+	        df_lkp_ODS_PRODUCT_lookup b
 	    ON 
-	        df_sq_PRODUCT_VENDOR_lkp_ODS_PRODUCT.PRODUCT_CODE_src = df_lkp_ODS_PRODUCT_lookup.PRODUCT_CODE
+	        a.PRODUCT_CODE_src = b.PRODUCT_CODE
 	""")
 	
 	#PROMPT END
